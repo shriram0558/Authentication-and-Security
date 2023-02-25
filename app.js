@@ -2,6 +2,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const ejs = require('ejs');
+const md5 = require('md5'); // hash function
 const User = require('./models/user');
 const port = 3000;
 
@@ -29,7 +30,7 @@ app.get('/login', (req, res) => {
 app.post('/register', async (req, res) => {
     let user = new User({
         email: req.body.username,
-        password: req.body.password
+        password: md5(req.body.password)
     });
     try {
         user = await user.save();
@@ -46,7 +47,7 @@ app.post('/login', async (req, res) => {
         if(user == null){
             throw new Error('User not found');
         }
-        if(user.password === req.body.password){
+        if(user.password === md5(req.body.password)){
             res.render('secrets');
         }
     }
