@@ -2,8 +2,9 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const ejs = require('ejs');
-const md5 = require('md5'); // hash function
+const bcrypt = require('bcrypt'); // hashing with salting
 const User = require('./models/user');
+const saltRounds = 10;
 const port = 3000;
 
 const app = express();
@@ -28,17 +29,19 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/register', async (req, res) => {
-    let user = new User({
-        email: req.body.username,
-        password: md5(req.body.password)
+    bcrypt.hash(req.body.password, saltRounds, async (err, hash) => {
+        let user = new User({
+            email: req.body.username,
+            password: hash
+        });
+        try {
+            user = await user.save();
+            res.render('secrets');
+        }
+        catch(err){
+            console.log( err.message );
+        }
     });
-    try {
-        user = await user.save();
-        res.render('secrets');
-    }
-    catch(err){
-        console.log( err.message );
-    }
 });
 
 app.post('/login', async (req, res) => {
@@ -47,9 +50,11 @@ app.post('/login', async (req, res) => {
         if(user == null){
             throw new Error('User not found');
         }
-        if(user.password === md5(req.body.password)){
-            res.render('secrets');
-        }
+        bcrypt.compare(req.body.password, user.password, (err, result) => {
+            if(result){
+                res.render('secrets');
+            }
+        });
     }
     catch(err){
         console.log(err);
