@@ -80,13 +80,28 @@ app.get('/login', (req, res) => {
     res.render('login');
 });
 
-app.get('/secrets', (req, res) => {
+app.get('/secrets', async (req, res) => {
+    const foundUsers = await User.find({"secret": {$ne: null}});
+    // console.log(foundUsers);
+    res.render('secrets', {usersWithSecrets: foundUsers});
+});
+
+app.get('/submit', (req, res) => {
     if(req.isAuthenticated()){
-        res.render('secrets');
+        res.render('submit');
     }
     else {
         res.redirect('/login');
     }
+});
+
+app.post('/submit', async (req, res) => {
+    const submittedSecret = req.body.secret;
+
+    const user = await User.findById(req.user.id);
+    user.secret = submittedSecret;
+    await user.save();
+    res.redirect('/secrets');
 });
 
 app.get('/logout', (req, res) => {
